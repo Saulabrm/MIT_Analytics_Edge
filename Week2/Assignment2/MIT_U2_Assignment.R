@@ -1,4 +1,4 @@
-setwd("/Users/saulgarcia/Desktop/Github/MOOCs/MIT Analyticals Edge/Week2/Unit2/Assignment2")
+setwd("/Users/saulgarcia/Desktop/Github/MIT_Analytics_Edge/Week2/Assignment2")
 
 statedata = read.csv("statedata.csv")
 str(statedata)

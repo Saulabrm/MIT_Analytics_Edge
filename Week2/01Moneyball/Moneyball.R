@@ -2,7 +2,7 @@
 #Unit2
 #Moneyball
 
-setwd("/Users/saulgarcia/Desktop/Github/MOOCs/MIT Analyticals Edge/Week2/Unit2/01Moneyball")
+setwd("/Users/saulgarcia/Desktop/Github/MIT_Analytics_Edge/Week2/01Moneyball")
 list.files()
 
 baseball = read.csv("baseball.csv")
