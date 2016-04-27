@@ -139,8 +139,63 @@ plot(log(flu$ILI),flu$Queries) #Positive linear relationship
 # log(ILI) = intercept + coefficient x Queries, where the coefficient is positive log(ILI) = intercept + coefficient x Queries, where the coefficient is positive 
 
 #Problem 2.2 - Linear Regression Model
-FluTrend1 = lm(Queries ~ log(ILI), data = flu)
+FluTrend1 = lm(log(ILI)~Queries, data = flu)
 summary(FluTrend1)[8]
 
 #Problem 2.3 - Linear Regression Model
+cor(flu$Queries,log(flu$ILI))^2
+
+#Problem 3.1 - Performance on the Test Set
+FluTest = read.csv("FluTest.csv")
+PredTest1 = exp(predict(FluTrend1, newdata=FluTest))
+
+FluTest$prediction = PredTest1
+FluTest
+FluTest[which(FluTest$Week == "2012-03-11 - 2012-03-17"),4]
+
+#Problem 3.2 - Performance on the Test Set
+(FluTest[which(FluTest$Week == "2012-03-11 - 2012-03-17"),2]-FluTest[which(FluTest$Week == "2012-03-11 - 2012-03-17"),4])/FluTest[which(FluTest$Week == "2012-03-11 - 2012-03-17"),2]
+
+#Problem 3.3 - Performance on the Test Set
+
+RMSE = sqrt(mean((PredTest1-FluTest$ILI)^2))
+RMSE
+
+#Problem 4.1 - Training a Time Series Model
+install.packages("zoo")
+library(zoo)
+
+ILILag2 = lag(zoo(flu$ILI), -2, na.pad=TRUE)
+flu$ILILag2 = coredata(ILILag2)
+head(flu)
+summary(flu)
+
+#Problem 4.2 - Training a Time Series Model
+plot(log(flu$ILILag2), log(flu$ILI)) #Positive relationship
+
+#Problem 4.3 - Training a Time Series Model
+FluTrend2 = lm(log(ILI)~Queries + log(ILILag2), data = flu)
+summary(FluTrend2)
+summary(FluTrend2)[8]
+
+#Problem 4.4 - Training a Time Series Model
+ILILag2 = lag(zoo(FluTest$ILI), -2, na.pad=TRUE)
+FluTest$ILILag2 = coredata(ILILag2)
+summary(FluTest) #2
+
+#Problem 5.2 - Evaluating the Time Series Model in the Test Set
+#Second to last observation
+#last observation
+
+#Problem 5.3 - Evaluating the Time Series Model in the Test Set
+FluTest$ILILag2[1:2]= flu$ILI[416:417]
+FluTest$ILILag2[1:2]
+
+#Problem 5.4 - Evaluating the Time Series Model in the Test Set
+PredTest2 = exp(predict(FluTrend2, FluTest))
+
+RMSE = sqrt(mean((PredTest2-FluTest$ILI)^2))
+RMSE #Lower is better
+
+#Problem 5.5 - Evaluating the Time Series Model in the Test Set
 
