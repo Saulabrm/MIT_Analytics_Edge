@@ -143,3 +143,90 @@ ggplot(MurderMap, aes(x=long, y=lat, group=group, fill=MurderRate)) + geom_polyg
 #Pplot by gun ownership
 ggplot(MurderMap, aes(x=long, y=lat, group=group, fill=GunOwnership)) + geom_polygon(color="black") + scale_fill_gradient(low="white",high="red", guide="legend")
 #Montana
+
+
+##########     RECITATION      ###########
+######### GOOD PLOT, BAD PLOT ############
+
+library(ggplot2)
+intl = read.csv("intl.csv")
+str(intl)
+
+#Barplot
+ggplot(intl, aes(x=Region, y=PercentOfIntl)) + 
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = PercentOfIntl))
+
+#Order Region factor (decreasing order)
+intl = transform(intl, Region = reorder(Region, -PercentOfIntl))
+str(intl)
+
+#Convert decimals into perentages
+intl$PercentOfIntl = intl$PercentOfIntl*100
+
+ggplot(intl, aes(x=Region, y=PercentOfIntl)) +
+  geom_bar(stat = "identity", fill = "dark blue") +
+  geom_text(aes(label = PercentOfIntl), vjust= -0.4) +  #Vjust moves the labels down, or up
+  ylab("Percent of International Students") +
+  theme(axis.title.x = element_blank(), axis.text.x = element_text(angle=45, hjust =1))
+
+#World Map
+library(ggmap)
+intlall= read.csv("intlall.csv", stringsAsFactors = FALSE)
+head(intlall)
+#NAs to 0
+intlall[is.na(intlall)] = 0
+head(intlall)
+
+world_map = map_data("world")
+str(world_map)
+
+world_map <-  merge(world_map, intlall, by.x="region" , by.y="Citizenship")
+str(world_map)
+
+# Plot the map, the merge reordered the data..
+ggplot(world_map, aes(x=long, y=lat, group=group)) +
+  geom_polygon(fill="white", color="black") + 
+  coord_map("mercator")
+
+# Reorder the data
+world_map = world_map[order(world_map$group, world_map$order),]
+
+ggplot(world_map, aes(x=long, y=lat, group=group)) +
+  geom_polygon(fill="white", color="black") + 
+  coord_map("mercator")
+
+table(intlall$Citizenship) #China has a differnet name
+intlall$Citizenship[intlall$Citizenship == "China (People's Republic Of)"] = "China"
+
+#Repeat Merge
+world_map = map_data("world")
+world_map <-  merge(world_map, intlall, by.x="region" , by.y="Citizenship")
+world_map = world_map[order(world_map$group, world_map$order),]
+
+#Map
+ggplot(world_map, aes(x=long, y=lat, group=group)) +
+  geom_polygon(aes(fill=Total), color="black") + 
+  coord_map("mercator")
+
+#3D Map
+ggplot(world_map, aes(x=long, y=lat, group=group)) +
+  geom_polygon(aes(fill=Total), color="black") + 
+  coord_map("ortho", orientation = c(20,30,0))
+
+#### HouseHolds
+
+households = read.csv("households.csv")
+str(households)
+
+library(reshape2)
+households[,1:2]
+
+head(melt(households, id="Year"))
+households[,1:3]
+
+melt(households, id="Year")
+
+#Plot
+ggplot(melt(households, id="Year"), aes(x=Year, y=value, color=variable)) +
+  geom_line(size=2) + geom_point(size=5) + ylab("Percentage of Households")
