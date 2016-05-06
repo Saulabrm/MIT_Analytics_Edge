@@ -155,3 +155,115 @@ prediction = predict(RFletter, test, type="class")
 cm = table(test$letter, prediction)
 acc = sum(diag(cm))/nrow(test)
 acc
+
+###############################
+###############################
+
+# PREDICTING EARNINGS FROM CENSUS DATA #
+
+#Problem 1.1 - A Logistic Regression Model
+census <- read.csv("census.csv")
+
+set.seed(2000)
+spl <- sample.split(census$over50k, SplitRatio =.6 )
+train <- subset(census, spl==TRUE)
+test <- subset(census, spl==FALSE)
+
+fitGLM <- glm(over50k~., train, family="binomial")
+summary(fitGLM)
+
+#Problem 1.2 - A Logistic Regression Model
+prediction <- predict(fitGLM, test)
+cm <- table(test$over50k, prediction>.5)
+acc <- sum(diag(cm))/nrow(test)
+acc
+
+#Problem 1.3 - A Logistic Regression Model #Baseline Test
+max(table(test$over50k))/sum(table(test$over50k))
+
+#Problem 1.4 - A Logistic Regression Model
+#ROCurve
+library(ROCR)
+pred = prediction(prediction, test$over50k) 
+as.numeric(performance(pred,"auc")@y.values)
+
+#Problem 2.1 - A CART Model
+CARTfit1 = rpart(over50k~., data= train, method="class")
+prp(CARTfit1) #4 splits
+
+#Problem 2.2 - A CART Model
+#Relationship
+
+#Problem 2.3 - A CART Model
+#Education and capital gain
+
+#Problem 2.4 - A CART Model
+prediction <- predict(CARTfit1, test, type="class")
+cm=table(test$over50k, prediction)
+acc= sum(diag(cm))/nrow(test)
+acc
+
+#Problem 2.5 - A CART Model
+#ROCurve CART
+library(ROCR)
+prediction <- predict(CARTfit1, test)
+pred = prediction(prediction[,2], test$over50k) 
+as.numeric(performance(pred,"auc")@y.values)
+
+perf = performance(pred, "tpr", "fpr")
+plot(perf)
+plot(perf, colorize = TRUE)
+plot(perf, colorize = TRUE, print.cutoffs.at=seq(0,1,0.1), text.adj=c(-.2,1.7))
+
+#ROCurve GLM
+library(ROCR)
+prediction <- predict(fitGLM, test)
+pred = prediction(prediction, test$over50k) 
+as.numeric(performance(pred,"auc")@y.values)
+
+perf = performance(pred, "tpr", "fpr")
+plot(perf)
+plot(perf, colorize = TRUE)
+plot(perf, colorize = TRUE, print.cutoffs.at=seq(0,1,0.1), text.adj=c(-.2,1.7))
+
+
+#Problem 3.1 - A Random Forest Model
+set.seed(1)
+trainSmall <- train[sample(nrow(train),2000),]
+set.seed(1)
+RFfit1 <- randomForest(over50k~.,train )
+prediction <- predict(RFfit1, test)
+cm = table(test$over50k, prediction)
+acc= sum(diag(cm))/nrow(test)
+acc
+
+#Problem 3.2 - A Random Forest Model ************
+vu = varUsed(RFfit1, count=TRUE)
+vusorted = sort(vu, decreasing = FALSE, index.return = TRUE)
+dotchart(vusorted$x, names(RFfit1$forest$xlevels[vusorted$ix]))
+#chart that for each variable measures the number of times that variable was selected for splitting (the value on the x-axis)
+
+#Problem 3.3 - A Random Forest Model
+#Impurity reduction average
+varImpPlot(RFfit1)
+
+#Problem 4.1 - Selecting cp by Cross-Validation
+library(caret)
+set.seed(2)
+#Specify the k folds
+fitControl = trainControl(method = "cv", number = 10)
+#Grid of cp values to evaluate
+cartGrid = expand.grid( .cp = seq(0.002,0.1,0.002))
+train(over50k~., data=train, method="rpart", trControl=fitControl, tuneGrid=cartGrid)
+#cp=0.002  acc=0.8515658
+
+#Problem 4.2 - Selecting cp by Cross-Validation
+CARTfit2 = rpart(over50k~., data= train, method="class", cp=.002)
+prediction = predict(CARTfit2, test, type="class")
+cm <- table(test$over50k, prediction)
+acc <- sum(diag(cm))/sum(cm)
+acc
+
+prp(CARTfit2)
+
+#Problem 4.3 - Selecting cp by Cross-Validation
