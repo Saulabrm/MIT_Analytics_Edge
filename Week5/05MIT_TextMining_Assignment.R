@@ -1,8 +1,11 @@
 setwd("/Users/saulgarcia/Desktop/Github/MIT_Analytics_Edge/Week5")
 library(tm)
+library(randomForest)
+library(caTools)
+library(rpart)
+library(rpart.plot)
 
-
-###########  DETECTING VANDALISM ON WIKIPEDIA  #########
+#############################  DETECTING VANDALISM ON WIKIPEDIA  ########################
 #Problem 1.1 - Bags of Words
 wiki <- read.csv("wiki.csv", stringsAsFactors = FALSE)
 wiki$Vandal <- as.factor(wiki$Vandal)
@@ -113,3 +116,235 @@ accuracy #[1] 0.7139175
 
 #Problem 3.2 - Using Non-Textual Data
 prp(wikiCart4)
+
+
+###########  AUTOMATING REVIEWS IN MEDICINE  #########
+
+#Problem 1.1 - Loading the Data
+trials <- read.csv("clinical_trial.csv", stringsAsFactors = FALSE)
+summary(trials)
+str(trials)
+max(nchar(trials$abstract))
+
+#Problem 1.2 - Loading the Data
+dim(subset(trials, nchar(abstract)==0))[1]
+
+#Problem 1.3 - Loading the Data
+which.min(nchar(trials$title))
+trials$title[which.min(nchar(trials$title))]
+
+#Problem 2.1 - Preparing the Corpus
+
+corpusTitle = Corpus(VectorSource(trials$title))
+corpusAbstract =Corpus(VectorSource(trials$abstract))
+
+corpusTitle = tm_map(corpusTitle, tolower)
+corpusAbstract = tm_map(corpusAbstract, tolower)
+
+corpusTitle = tm_map(corpusTitle, PlainTextDocument)
+corpusAbstract = tm_map(corpusAbstract, PlainTextDocument)
+
+corpusTitle = tm_map(corpusTitle, removePunctuation)
+corpusAbstract = tm_map(corpusAbstract, removePunctuation)
+
+corpusTitle = tm_map(corpusTitle, removeWords, stopwords("english"))
+corpusAbstract = tm_map(corpusAbstract, removeWords, stopwords("english"))
+
+corpusTitle = tm_map(corpusTitle, stemDocument)
+corpusAbstract = tm_map(corpusAbstract, stemDocument)
+
+  #Build document Matrix
+dtmTitle = DocumentTermMatrix(corpusTitle)
+dtmAbstract = DocumentTermMatrix(corpusAbstract)
+
+  #Sparness of at most 95%
+dtmTitle = removeSparseTerms(dtmTitle, 0.95)
+dtmAbstract = removeSparseTerms(dtmAbstract, .95)
+
+  #As DataFrame
+dtmTitle = as.data.frame(as.matrix(dtmTitle))
+dtmAbstract = as.data.frame(as.matrix(dtmAbstract))
+
+dim(dtmTitle);dim(dtmAbstract)
+
+#Problem 2.2 - Preparing the Corpus
+# Abstract have more words
+
+#Problem 2.3 - Preparing the Corpus
+which.max(colSums(dtmAbstract))
+
+#Problem 3.1 - Building a model
+colnames(dtmTitle) = paste0("T", colnames(dtmTitle))
+colnames(dtmAbstract) = paste0("A", colnames(dtmAbstract))
+
+#Problem 3.2 - Building a Model
+dtm = cbind(dtmTitle, dtmAbstract)
+dtm$trial = trials$trial
+ncol(dtm)
+
+#Problem 3.3 - Building a Model
+set.seed(144)
+spl = sample.split(dtm$trial, SplitRatio = .7)
+train = subset(dtm, spl==TRUE)
+test = subset(dtm, spl==FALSE)
+
+Baseline = table(test$trial)
+BaselineModel = max(Baseline)/sum(Baseline)
+
+#Problem 3.4 - Building a Model
+
+Model1 = rpart(trial~., train, method="class")
+pred = predict(Model1, newdata = test, type="class")
+cm = table(test$trial, pred)
+accuracy = sum(diag(cm))/sum(cm)
+accuracy
+
+prp(Model1)
+
+#Problem 3.5 - Building a Model
+prediction = predict(Model1)
+predtest = predict(Model1, newdata = test)
+
+max(prediction[,2])
+max(predtest[,2])
+
+#Problem 3.7 - Building a Model
+cm = table(train$trial, prediction[,2] >.5)
+TN = cm[1,1]
+TP = cm[2,2]
+FN = cm[2,1]
+FP = cm[1,2]
+Sensitivity =  TP/(TP+FN)     #TP / Positives
+Specificity =  TN/(TN + FP)   #TN / Negatives
+Acc = (TP + TN)/sum(cm) 
+Sensitivity
+Specificity
+Acc
+
+#Problem 4.1 - Evaluating the model on the testing set
+cm = table(test$trial, pred)
+accuracy = sum(diag(cm))/sum(cm)
+accuracy
+
+#Problem 4.2 - Evaluating the Model on the Testing Set
+library(ROCR)
+pred = predict(Model1, newdata = test)
+pred = prediction(pred[,2], test$trial)
+as.numeric(performance(pred,"auc")@y.values)
+
+#PART 5: DECISION-MAKER TRADEOFFS
+#5.1 A paper that should have been included in Set A will be missed, affecting the quality of the results of Step 3. A paper that should have been included in Set A will be missed, affecting the quality of the results of Step 3.
+#5.2 A paper will be mistakenly added to Set A, yielding additional work in Step 2 of the process but not affecting the quality of the results of Step 3. A paper will be mistakenly added to Set A, yielding additional work in Step 2 of the process but not affecting the quality of the results of Step 3.
+#5.3 A false negative is more costly than a false positive; the decision maker should use a probability threshold less than 0.5 for the machine learning model.
+
+#############################  SEPARATING SPAM FROM HAM  ########################
+
+#Problem 1.1 - Loading the Dataset
+emails <- read.csv("emails.csv", stringsAsFactors = FALSE)
+nrow(emails)
+
+#Problem 1.2 - Loading the Dataset
+table(emails$spam)
+table(emails$spam)[2]
+
+#Problem 1.3 - Loading the Dataset
+emails$text[1]
+
+#Problem 1.4 - Loading the Dataset
+#Yes
+
+#Problem 1.5 - Loading the Dataset
+max(nchar(emails$text))
+
+#Problem 1.6 - Loading the Dataset
+which.min(nchar(emails$text))
+
+#Problem 2.1 - Preparing the Corpus
+corpus = Corpus(VectorSource(emails$text))
+corpus = tm_map(corpus, tolower)
+corpus = tm_map(corpus, PlainTextDocument)
+corpus = tm_map(corpus, removePunctuation)
+corpus = tm_map(corpus, removeWords, stopwords("english"))
+corpus = tm_map(corpus, stemDocument)
+dtm = DocumentTermMatrix(corpus)
+dim(dtm)[2]
+
+#Problem 2.2 - Preparing the Corpus
+#Sparness of at most 95% (containing terms appearing in at least 5%)
+spdtm = removeSparseTerms(dtm, 0.95)
+dim(spdtm)[2]
+
+#Problem 2.3 - Preparing the Corpus
+emailsSparse = as.data.frame(as.matrix(spdtm))
+which.max(colSums(emailsSparse))
+
+#Problem 2.4 - Preparing the Corpus
+emailsSparse$spam = emails$spam
+sort(colSums(subset(emailsSparse, spam==0)))
+
+#Problem 2.5 - Preparing the Corpus
+sort(colSums(subset(emailsSparse, spam==1)))
+
+# Problem 2.6 - Preparing the Corpus
+# The frequencies of these most common words are likely to help differentiate between spam and ham. The frequencies of these most common words are likely to help differentiate between spam and ham. - correct
+
+#Problem 2.7 - Preparing the Corpus
+#The models we build are personalized, and would need to be further tested before being used as a spam filter for another person. 
+
+#Problem 3.1 - Building machine learning models
+emailsSparse$spam = as.factor(emailsSparse$spam)
+set.seed(123)
+spl = sample.split(emailsSparse$spam, SplitRatio = .7)
+train = subset(emailsSparse, spl == T)
+test = subset(emailsSparse, spl==F)
+
+modelGLM = glm(spam~. , train, family = "binomial")
+modelCART = rpart(spam~., train, method="class")
+set.seed(123)
+modelRF=randomForest(spam ~ . , data=train)
+
+predGLM = predict(modelGLM, type="response")
+predCART = predict(modelCART)[,2]
+predRF = predict(modelRF, type="prob")[,2]
+
+table(predGLM < 0.00001)
+table(predCART > .99999)
+table(predGLM >= .00001 & predGLM <= .9999 )
+
+#Problem 3.2 - Building Machine Learning Models
+summary(modelGLM)
+#NONE below P value .05
+
+#Problem 3.3 - Building Machine Learning Models
+prp(modelCART)
+
+#Problem 3.4 - Building Machine Learning Models
+cm = table(train$spam, predGLM >.5)
+sum(diag(cm))/sum(cm) #acc
+
+#Problem 3.5 - Building Machine Learning Models
+#AUC
+library(ROCR)
+prediction = prediction(predGLM, train$spam)
+as.numeric(performance(prediction,"auc")@y.values)
+
+#Problem 3.6 - Building Machine Learning Models
+cm = table(train$spam, predCART >.5)
+sum(diag(cm))/sum(cm) #acc
+
+#Problem 3.7 - Building Machine Learning Models
+prediction = prediction(predCART, train$spam)
+as.numeric(performance(prediction,"auc")@y.values)
+
+#Problem 3.8 - Building Machine Learning Models
+cm = table(train$spam, predRF >.5)
+sum(diag(cm))/sum(cm) #acc
+
+#Problem 3.9 - Building Machine Learning Models
+prediction = prediction(predRF, train$spam)
+as.numeric(performance(prediction,"auc")@y.values)
+
+#Problem 3.10 - Building Machine Learning Models
+#Best model at training scenario GLM
+
+#Problem 4.1 - Evaluating on the Test Set

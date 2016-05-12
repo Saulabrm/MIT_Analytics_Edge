@@ -1,5 +1,5 @@
 #Unit 5.2 Text Mining _ ENRON
-setwd("/Users/saulgarcia/Desktop/Github/MOOCs/MIT Analyticals Edge/Week5")
+setwd("/Users/saulgarcia/Desktop/Github/MIT_Analytics_Edge/Week5")
 
 emails = read.csv("energy_bids.csv", stringsAsFactors = FALSE)
 str(emails)
