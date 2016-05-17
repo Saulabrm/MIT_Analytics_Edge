@@ -1,5 +1,5 @@
 #Unit 6 Clustering _ MovieLens
-setwd("/Users/saulgarcia/Desktop/Github/MOOCs/MIT Analyticals Edge/Week6")
+setwd("/Users/saulgarcia/Desktop/Github/MIT_Analytics_Edge/Week5")
 
 # url <- "http://files.grouplens.org/datasets/movielens/ml-100k/u.item"
 

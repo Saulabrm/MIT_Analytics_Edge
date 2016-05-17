@@ -276,6 +276,7 @@ dim(spdtm)[2]
 
 #Problem 2.3 - Preparing the Corpus
 emailsSparse = as.data.frame(as.matrix(spdtm))
+colnames(emailsSparse) <- make.names(colnames(emailsSparse))
 which.max(colSums(emailsSparse))
 
 #Problem 2.4 - Preparing the Corpus
@@ -348,3 +349,95 @@ as.numeric(performance(prediction,"auc")@y.values)
 #Best model at training scenario GLM
 
 #Problem 4.1 - Evaluating on the Test Set
+predGLM = predict(modelGLM, test,type="response")
+predCART = predict(modelCART,test)[,2]
+predRF = predict(modelRF, test ,type="prob")[,2]
+
+cm=table(test$spam, predGLM>.5)
+sum(diag(cm))/sum(cm) #acc logregression
+
+prediction = prediction(predGLM, test$spam)
+as.numeric(performance(prediction,"auc")@y.values)
+
+#Problem 4.3 - Evaluating on the Test Set
+cm=table(test$spam, predCART>.5)
+sum(diag(cm))/sum(cm) #acc 
+
+prediction = prediction(predCART, test$spam)
+as.numeric(performance(prediction,"auc")@y.values)
+
+#Problem 4.5 - Evaluating on the Test Set
+cm=table(test$spam, predRF>.5)
+sum(diag(cm))/sum(cm) #acc logregression
+
+prediction = prediction(predRF, test$spam)
+as.numeric(performance(prediction,"auc")@y.values)
+
+#Problem 4.7 - Evaluating on the Test Set
+#Best on testing set Random Forest
+
+################# SEPARATING SPAM FROM HAM (PART 2 - OPTIONAL) ################
+#Problem 5.1 - Assigning weights to different types of errors
+# False Negative
+  #A spam email will be displayed in the main inbox, a nuisance for the email user. 
+
+# False Positive
+  #A false positive means the model labels a ham email as spam. This results in a ham email being sent to the Junk Email folder.
+
+#Problem 5.2 - Assigning Weights to Different Types of Errors
+  #A false negative is largely a nuisance (the user will need to delete the unsolicited email). However a false positive can be very costly, since the user might completely miss an important email due to it being delivered to the spam folder. Therefore, the false positive is more costly
+
+#Problem 5.3 - Assigning Weights to Different Types of Errors
+  #A false negative results in spam reaching a user's main inbox, which is a nuisance. A user who is particularly annoyed by such spam would assign a particularly high cost to a false negative.
+
+#Problem 5.4 - Assigning Weights to Different Types of Errors
+  #A false positive results in ham being sent to a user's Junk Email folder. While the user might catch the mistake upon checking the Junk Email folder, users who never check this folder will miss the email, incurring a particularly high cost.
+
+#Problem 5.5 - Assigning Weights to Different Types of Errors
+  #While before many users would completely miss a ham email labeled as spam (false positive), now users will not miss an email after this sort of mistake. As a result, the cost of a false positive has been decreased.
+
+#Problem 5.6 - Assigning Weights to Different Types of Errors
+  #Automatically collect information about how often each user accesses his/her Junk Email folder to infer preferences Automatically collect information about how often each user accesses his/her Junk Email folder to infer preferences - correct
+
+#Problem 6.1 - Integrating Word Count Information
+wordCount = rowSums(as.matrix(dtm))
+  #wordCount would have only counted some of the words, but would have returned a result for all the emails
+
+#Problem 6.2 - Integrating Word Count Information
+hist(wordCount)
+#The data is skew right -- there are a large number of small wordCount values and a small number of large values. 
+
+#Problem 6.3 - Integrating Word Count Information
+hist(log(wordCount))
+  # The data is not skewed -- there are roughly the same number of unusually large and unusually small log(wordCount) values. The data is not skewed -- there are roughly the same number of unusually large and unusually small log(wordCount) values. - correct
+
+#Problem 6.4 - Integrating Word Count Information
+emailsSparse$logWordCount = log(wordCount)
+boxplot(logWordCount~spam, emailsSparse)
+  #logWordCount is slightly smaller in spam messages than in ham messages
+
+#Problem 6.5 - Integrating Word Count Information
+train2 = subset(emailsSparse, spl == T)
+test2 = subset(emailsSparse, spl==F)
+
+spam2CART <- rpart(spam ~., train2, method="class")
+spam2RF=randomForest(spam ~ . , data=train2)
+
+#Problem 6.6 - Integrating Word Count Information
+predCART <-  predict(spam2CART, test2)[,2]
+cm=table(test2$spam, predCART>.5)
+sum(diag(cm))/sum(cm)
+
+#Problem 6.7 - AUC
+library(ROCR)
+prediction = prediction(predCART, test2$spam)
+as.numeric(performance(prediction,"auc")@y.values)
+
+#Problem 6.8 - Integrating Word Count Information
+predRF = predict(spam2RF, test2, type="prob")[,2]
+cm=table(test2$spam, predRF>.5)
+sum(diag(cm))/sum(cm)
+
+#Problem 6.9 - AUC
+prediction = prediction(predRF, test2$spam)
+as.numeric(performance(prediction,"auc")@y.values)
